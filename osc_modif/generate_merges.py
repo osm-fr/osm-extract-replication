@@ -20,7 +20,7 @@
 ##                                                                       ##
 ###########################################################################
 
-import lockfile
+import fasteners
 import os
 import shutil
 import subprocess
@@ -70,8 +70,10 @@ def merge(filename, use_osmium):
   # get lock
   if not os.path.exists(work_path):
     os.makedirs(work_path)
-  lock = lockfile.FileLock(lock_file)
-  lock.acquire(timeout=0)
+  lock = fasteners.InterProcessLock(lock_file)
+  gotten = lock.acquire(timeout=5)
+  if not gotten:
+    raise Exception("Couldn't take lock: " + lock_file)
 
   diff_list = []
   f = open(filename, "r")
@@ -148,8 +150,10 @@ def merge_pbf(filename, use_osmium):
   # get lock
   if not os.path.exists(work_path):
     os.makedirs(work_path)
-  lock = lockfile.FileLock(lock_file)
-  lock.acquire(timeout=0)
+  lock = fasteners.InterProcessLock(lock_file)
+  gotten = lock.acquire(timeout=5)
+  if not gotten:
+    raise Exception("Couldn't take lock: " + lock_file)
 
   pbf_list = []
   f = open(filename, "r")
