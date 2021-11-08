@@ -11,8 +11,9 @@ minute_dirs=$(find -name "*.poly" | sed "s%.poly%/minute%")
 cd $G_WORKDIR
 
 num=$(cat planet/minute/state.txt | grep sequenceNumber | cut -d= -f2)
-oldest=$(($num - 2*30*24*60))  # keep 2 months of diff
+oldest=$(($num - 1*31*24*60))  # keep 1 months of diff
 oldest_dir=$(($oldest / 1000))
+echo $oldest_dir
 for d in $(seq 1000 $oldest_dir); do
   compl_dir=$(printf "%03d/%03d" $(($d / 1000)) $(($d % 1000)))
   if [ -e planet/minute/$compl_dir ]; then
@@ -23,5 +24,6 @@ for d in $(seq 1000 $oldest_dir); do
         rm -rf $c/$compl_dir
       fi
     done
+    rm -rf planet/minute/$compl_dir
   fi
 done
