@@ -825,8 +825,8 @@ class OscFilterSaxWriter(OscSaxWriter):
 
             # Big relations are included without any check
             bbox = data["bbox"]
-            if ((float(bbox["maxlat"]) - float(bbox["minlat"])) > 90 and
-                (float(bbox["maxlon"]) - float(bbox["minlon"])) > 180):
+            if ((float(bbox["maxlat"]) - float(bbox["minlat"])) > 80 and
+                (float(bbox["maxlon"]) - float(bbox["minlon"])) > 110):
                 return True
 
         if not data or len(data["member"]) == 0:
