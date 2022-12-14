@@ -130,7 +130,11 @@ def init_pbf(dirpath, filenames, options):
 
   if not options.only_state:
     if options.osmium:
-      num_runs = max(1, (len(osmium_config_list) + 1) // limit_country)
+      if "planet" in orig_pbf:
+        limit_country_pbf = 2
+      else:
+        limit_country_pbf = limit_country
+      num_runs = max(1, (len(osmium_config_list) + 1) // limit_country_pbf)
       first = 0
       last = (len(osmium_config_list) // num_runs)
       for run in range(num_runs):
