@@ -20,7 +20,7 @@
 ##                                                                       ##
 ###########################################################################
 
-import os, lockfile, shutil, time, dateutil.parser, dateutil.tz
+import os, fasteners, shutil, time, dateutil.parser, dateutil.tz
 import multiprocessing
 import urllib.request
 import sys
@@ -184,8 +184,10 @@ def update(wanted_end_sequence=None):
   # get lock
   if not os.path.exists(work_path):
     os.makedirs(work_path)
-  lock = lockfile.FileLock(lock_file)
-  lock.acquire(timeout=0)
+  lock = fasteners.InterProcessLock(lock_file)
+  gotten = lock.acquire(timeout=5)
+  if not gotten:
+    raise Exception("Couldn't take lock: " + lock_file)
 
   # get local sequence number
   def get_sequence_num(s):
