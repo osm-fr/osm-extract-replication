@@ -26,26 +26,40 @@ def generate_poly(country_name, polygon_id):
     os.makedirs(dir_name)
 
   # generate relation boundary
-  r = requests.get(relation_generation_url, params={"id": polygon_id})
-  parser = lxml.html.HTMLParser(encoding='UTF-8')
-  p = lxml.html.fromstring(r.text, parser=parser)
+  x = 0
+  y = 0
+  z = 0
 
-  print(relation_generation_url + "?id=" + str(polygon_id))
+  if isinstance(polygon_id, int):
+    polygon_id = (polygon_id, )
+  for id in polygon_id:
+    r = requests.get(relation_generation_url, params={"id": id})
+    parser = lxml.html.HTMLParser(encoding='UTF-8')
+    p = lxml.html.fromstring(r.text, parser=parser)
 
-  try:
-    form = p.forms[1]
-    x = form.inputs["x"].value
-    y = form.inputs["y"].value
-    z = form.inputs["z"].value
-  except:
-    print("    * ERROR * ")
-    return
+    print(relation_generation_url + "?id=" + str(id))
 
-  if not ("%s-%s-%s" % (x, y, z)) in r.text:
-    r = requests.post(relation_generation_url, params={"id": polygon_id}, data={"x": x, "y": y, "z": z})
+    try:
+      form = p.forms[1]
+      x = max(x, float(form.inputs["x"].value))
+      y = max(y, float(form.inputs["y"].value))
+      z = max(z, float(form.inputs["z"].value))
+    except:
+      print("    * ERROR * ")
+      return
 
-  r = requests.get(polygon_union_url, params={"id": polygon_id,
-                                              "params": "%s-%s-%s" % (x,y,z)})
+  for id in polygon_id:
+    r = requests.get(relation_generation_url, params={"id": id})
+    parser = lxml.html.HTMLParser(encoding='UTF-8')
+    p = lxml.html.fromstring(r.text, parser=parser)
+
+    if not ("%f-%f-%f" % (x, y, z)) in r.text:
+      r = requests.post(relation_generation_url, params={"id": id}, data={"x": x, "y": y, "z": z})
+
+
+  r = requests.get(polygon_union_url, params={"id": ",".join(map(str, polygon_id)),
+                                              "params": "%f-%f-%f" % (x,y,z)})
+  print(r.url)
 
   out_file = os.path.join("generated-polygons", country_name + ".poly")
   with open(out_file, "wb") as text_file:
@@ -61,17 +75,34 @@ def write_polygon(f_name, geom):
   with open(f_name, "w") as f:
     return modules.OsmGeom.write_multipolygon(f, geom)
 
-def union_update(country_name):
+def union_update(country_name, polygon_id):
+  if isinstance(polygon_id, int):
+    polygon_id = (polygon_id, )
+
   orig_poly = read_polygon(os.path.join("polygons", country_name + ".poly"))
   generated_poly = read_polygon(os.path.join("generated-polygons", country_name + ".poly"))
 
-  new_poly = shapely.ops.unary_union([orig_poly, generated_poly])
-  if not orig_poly.contains(new_poly):
-    write_polygon(os.path.join("polygons", country_name + "_new.poly"), shapely.wkt.loads(shapely.wkt.dumps(new_poly, rounding_precision=3)).wkt)
+  relation_file = os.path.join("relation-polygons", country_name + ".poly")
+  if not os.path.exists(relation_file):
+    dir_name = os.path.join("relation-polygons", os.path.dirname(country_name))
+    if not os.path.exists(dir_name):
+      os.makedirs(dir_name)
+
+    r = requests.get(polygon_union_url, params={"id": ",".join(map(str, polygon_id)),
+                                                "params": "0"})
+    print(r.url)
+    with open(relation_file, "wb") as text_file:
+      text_file.write(r.content)
+
+  relation_poly = read_polygon(relation_file)
+
+  if not orig_poly.contains(relation_poly):
+    new_poly = shapely.ops.unary_union([orig_poly, generated_poly])
+    write_polygon(os.path.join("updated-polygons", country_name + ".poly"), shapely.wkt.loads(shapely.wkt.dumps(new_poly, rounding_precision=3)).wkt)
     print("   updated")
   else:
     try:
-      os.unlink(os.path.join("polygons", country_name + "_new.poly"))
+      os.unlink(os.path.join("updated-polygons", country_name + ".poly"))
     except:
       pass
 
@@ -95,6 +126,7 @@ if __name__ == '__main__':
     with open(args.file) as f:
       for line in f.readlines():
         (country_name, polygon_id) = line.split()
+        polygon_id = [int(i) for i in polygon_id.split(",")]
         generate_poly(country_name, polygon_id)
 
   if args.regions:
@@ -120,4 +152,4 @@ if __name__ == '__main__':
             continue
           generate_poly(country_name, polygon_id)
           if args.union_update:
-            union_update(country_name)
+            union_update(country_name, polygon_id)
