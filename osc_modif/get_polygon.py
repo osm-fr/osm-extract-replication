@@ -85,6 +85,8 @@ if __name__ == '__main__':
                       help="Get list of extracts to generate - format 'name rel_id' per line")
   parser.add_argument("--region", dest="regions", action="store", nargs="+",
                       help="Get list of region to generate - rel_id from osmose backend")
+  parser.add_argument("--country", dest="country", action="store", nargs="+",
+                      help="Get list of country to generate - rel_id from osmose backend")
   parser.add_argument("--union-update", dest="union_update", action="store_true",
                       help="Update polygon, by doing an Union with previous polygon")
   args = parser.parse_args()
@@ -109,6 +111,8 @@ if __name__ == '__main__':
         if not found and region in r.download["state.txt"]:
           found = True
           country_name = r.download["state.txt"].split("extracts/")[1].split(".state.txt")[0]
+          if args.country and not country_name.split("/")[-1] in args.country:
+            continue
           polygon_id = r.polygon_id
           print(country_name)
           generate_poly(country_name, polygon_id)
