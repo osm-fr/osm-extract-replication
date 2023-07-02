@@ -106,6 +106,18 @@ def union_update(country_name, polygon_id):
     except:
       pass
 
+def generate_poly_merge(merge_name, merge_sources):
+  print(merge_name, merge_sources)
+
+  merge_polys = []
+
+  for m in merge_sources:
+    merge_polys.append(read_polygon(os.path.join("polygons", m + ".poly")))
+
+  merge_poly = shapely.ops.unary_union(merge_polys)
+  write_polygon(os.path.join("polygons-merge", merge_name + ".poly"), shapely.wkt.loads(shapely.wkt.dumps(merge_poly, rounding_precision=3)).wkt)
+  print("   generated")
+
 
 if __name__ == '__main__':
 
@@ -120,6 +132,8 @@ if __name__ == '__main__':
                       help="Get list of country to generate - rel_id from osmose backend")
   parser.add_argument("--union-update", dest="union_update", action="store_true",
                       help="Update polygon, by doing an Union with previous polygon")
+  parser.add_argument("--merge", dest="merge", action="store_true",
+                      help="Generate merge polygons")
   args = parser.parse_args()
 
   if args.file:
@@ -153,3 +167,11 @@ if __name__ == '__main__':
           generate_poly(country_name, polygon_id)
           if args.union_update:
             union_update(country_name, polygon_id)
+
+  if args.merge:
+    for merge_name in os.listdir('merge'):
+      merge_sources = []
+      with open(os.path.join('merge', merge_name)) as f:
+        for line in f.readlines():
+           merge_sources.append(line.strip())
+      generate_poly_merge(merge_name, merge_sources)
