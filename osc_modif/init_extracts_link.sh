@@ -6,6 +6,9 @@ G_WORKDIR=/data/work/osmbin/extracts/
 WEBDIR=/data/project/osmbin/web/extracts
 POLYDIR=$HOME/osm/osc_modif/polygons
 MERGEDIR=$HOME/osm/osc_modif/merge
+POLYMERGEDIR=$HOME/osm/osc_modif/polygons-merge
+
+ln -sf $POLYMERGEDIR $WEBDIR/../polygons/merge
 
 for region in $(cd $POLYDIR && ls | grep -v ".poly"); do
   echo "*** Init link for $region"
