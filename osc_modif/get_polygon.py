@@ -115,6 +115,9 @@ if __name__ == '__main__':
             continue
           polygon_id = r.polygon_id
           print(country_name)
+          if country_name in ("north-america/canada/nunavut", "north-america/canada/quebec/nord_du_quebec"):
+            print("  - skipped")
+            continue
           generate_poly(country_name, polygon_id)
           if args.union_update:
             union_update(country_name)
