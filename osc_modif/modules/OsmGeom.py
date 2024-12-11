@@ -22,6 +22,7 @@
 
 import re
 from shapely.wkt import loads
+from shapely.geometry import LineString
 from shapely.geometry import MultiPolygon
 from shapely.geometry import Polygon
 from shapely.geometry import Point
@@ -141,8 +142,13 @@ def check_intersection(polygon, coords):
         minlon = float(coords["minlon"])
         maxlat = float(coords["maxlat"])
         maxlon = float(coords["maxlon"])
-        obj = Polygon(((minlon, minlat), (minlon, maxlat),
-                       (maxlon, maxlat), (maxlon, minlat)))
+        if minlat == maxlat and minlon == maxlon:
+            obj = Point((minlon, minlat))
+        elif minlat == maxlat or minlon == maxlon:
+            obj = LineString([(minlon, minlat), (maxlon, maxlat)])
+        else:
+            obj = Polygon(((minlon, minlat), (minlon, maxlat),
+                           (maxlon, maxlat), (maxlon, minlat)))
 
     return polygon.intersects(obj)
 
@@ -160,3 +166,90 @@ if __name__ == "__main__":
 
     print(check_intersection(geom, (1, 1)))
     print(check_intersection(geom, (48, 2)))
+
+###########################################################################
+import unittest
+
+class Test(unittest.TestCase):
+    def test_africa(self):
+        f = open("polygons/africa.poly", "r")
+        name = f.readline().strip()
+        self.assertEqual(name, "africa")
+        poly = read_multipolygon(f)
+        self.assertEqual(poly, MultiPolygon([((
+            (11.60092, 33.99875),
+            (11.60207, 37.77817),
+            (3.525989, 37.76444),
+            (-1.967826, 36.32171),
+            (-4.287849, 36.20082),
+            (-5.60294, 35.9877),
+            (-9.618688, 35.98102),
+            (-15.514733, 29.500826),
+            (-27.262032, 30.814),
+            (-23.24536, -60.3167),
+            (44.63942, -57.08798),
+            (66.722766, -14.903707),
+            (51.63025, 12.55015),
+            (44.20775, 11.6786),
+            (43.654172, 12.549204),
+            (43.357541, 12.634981),
+            (43.338315, 12.790377),
+            (43.107602, 13.210537),
+            (42.679135, 13.592602),
+            (42.517084, 14.088635),
+            (42.044667, 14.711145),
+            (39.813119, 18.162296),
+            (37.902821, 22.23827),
+            (34.741261, 27.031591),
+            (34.475784, 28.006527),
+            (34.705809, 28.576081),
+            (34.93741, 29.42519),
+            (34.879703, 29.557033),
+            (34.885883, 29.642857),
+            (34.84924, 29.78666),
+            (34.24284, 31.296815),
+            (32.706293, 33.975258),
+            (11.60092, 33.99875),
+        ), [])]))
+
+    def test_canarias(self):
+        f = open("polygons/africa/spain/canarias.poly", "r")
+        name = f.readline().strip()
+        poly = read_multipolygon(f)
+        self.assertEqual(len(poly.geoms), 9)
+        self.assertEqual(len(poly.geoms[0].exterior.coords), 8)
+        self.assertEqual(len(poly.geoms[1].exterior.coords), 55)
+        self.assertEqual(len(poly.geoms[2].exterior.coords), 9)
+        self.assertEqual(len(poly.geoms[3].exterior.coords), 61)
+        self.assertEqual(len(poly.geoms[4].exterior.coords), 69)
+
+        self.assertEqual(check_intersection(poly, (0, 0)), False)
+        self.assertEqual(check_intersection(poly, (28.1876, -16.6015)), True)
+
+        bbox = { "minlat": -26.6015000,
+                 "maxlat": 0,
+                 "minlon": -36.6015000,
+                 "maxlon": -26.6015000,
+               }
+        self.assertEqual(check_intersection(poly, bbox), False)
+
+        bbox = { "minlat": 28.1875000,
+                 "maxlat": 28.1876000,
+                 "minlon": -16.6015200,
+                 "maxlon": -16.6015100,
+               }
+        self.assertEqual(check_intersection(poly, bbox), True)
+
+        bbox = { "minlat": 28.1875000,
+                 "maxlat": 28.1875000,
+                 "minlon": -16.6015200,
+                 "maxlon": -16.6015200,
+               }
+        self.assertEqual(check_intersection(poly, bbox), True)
+
+        bbox = { "minlat": 28.1875000,
+                 "maxlat": 28.1875000,
+                 "minlon": -16.6015200,
+                 "maxlon": -16.6015100,
+               }
+        self.assertEqual(check_intersection(poly, bbox), True)
