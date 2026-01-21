@@ -24,6 +24,7 @@ import os
 import urllib
 import shutil
 import subprocess
+import sys
 
 # configuration
 osmosis_bin = "/usr/bin/osmosis"
@@ -75,10 +76,17 @@ def init_pbf(dirpath, filenames, options):
 
     if options.country and f.split(".")[0] not in options.country:
       continue
-    print(f)
     need_launch = True
     dst_poly = os.path.join(pwd, dirpath, f)
-    dst_pbf = os.path.join(country_dir[f], ".".join(f.split(".")[:-1]) + ".osm.tmp.pbf")
+    base_pbf = os.path.join(country_dir[f], ".".join(f.split(".")[:-1]))
+    dst_pbf = base_pbf + ".osm.tmp.pbf"
+    dest_state = os.path.join(work_pbfs_path, dirpath, f.split(".")[0], "state.txt")
+    if os.path.isfile(base_pbf + ".osm.pbf") and os.path.isfile(dest_state):
+      print("Skipping", f)
+      continue
+    else:
+      print(f)
+
     try:
       os.remove(dst_pbf)
     except OSError:
@@ -107,7 +115,7 @@ def init_pbf(dirpath, filenames, options):
   osmium_config_end  = '    ]\n'
   osmium_config_end += '}\n'
 
-  if not need_launch:
+  if not need_launch or len(osmium_config_list) == 0:
     return
 
   # Create configuration.txt
@@ -131,17 +139,27 @@ def init_pbf(dirpath, filenames, options):
   if not options.only_state:
     if options.osmium:
       if "planet" in orig_pbf:
-        limit_country_pbf = 2
+        limit_country_pbf = limit_country
       else:
         limit_country_pbf = limit_country
-      num_runs = max(1, (len(osmium_config_list) + 1) // limit_country_pbf)
+      if (len(osmium_config_list) % limit_country_pbf) == 0:
+        num_runs = len(osmium_config_list) // limit_country_pbf
+        step = limit_country_pbf
+      else:
+        num_runs = (len(osmium_config_list) // limit_country_pbf) + 1
+        step = (len(osmium_config_list) + num_runs - 1) // num_runs
       first = 0
-      last = (len(osmium_config_list) // num_runs)
+      last = step
       for run in range(num_runs):
         if run == num_runs-1:
           last = len(osmium_config_list)
 
         print("  run %d with %d countries" % (run, last-first))
+        if (last-first) > limit_country_pbf:
+            print("Error on number of countries to be launched")
+            print(num_runs, len(osmium_config_list), len(osmium_config_list) // limit_country_pbf)
+            sys.exit(-1)
+
         osmium_config = "".join(osmium_config_list[first:last])
         with open(osmium_config_file, "w") as f:
           f.write(osmium_config_begin)
@@ -151,7 +169,7 @@ def init_pbf(dirpath, filenames, options):
         subprocess.check_call(osmium_cmd)
 
         first = last
-        last += len(osmium_config_list) // num_runs
+        last += step
     else:
       print(cmd)
       subprocess.check_call(cmd)
