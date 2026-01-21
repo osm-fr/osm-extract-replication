@@ -6,7 +6,7 @@ G_WORKDIR=/data/work/osmbin/replication/diffs/
 
 cd polygons
 
-minute_dirs=$(find -name "*.poly" | sed "s%.poly%/minute%")
+minute_dirs=$(find -name "*.poly" | sed "s%\.poly%/minute%")
 
 cd $G_WORKDIR
 
