@@ -2,7 +2,7 @@
 
 set -e
 
-cd /data/work/osmbin
+cd /data/work/osmbin/replication
 
 if [ -e replication.log.1 ]; then
   gzip replication.log.1
@@ -16,6 +16,8 @@ done
 
 mv replication.log replication.log.1
 touch replication.log
+
+cd /data/work/osmbin
 
 if [ -e merge.log.1 ]; then
   gzip merge.log.1
