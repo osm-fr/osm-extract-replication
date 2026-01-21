@@ -1,0 +1,16 @@
+$ git clone https://github.com/osmose-qa/osmose-backend.git
+$ cd osm/osc_modif
+$ ln -s ../../osmose-backend .
+$ vi osmose-backend/osmose_config.py
+-default_country("africa", "egypt", 1473947,   {"country": "EG", "language": "ar", "proj": 32635})
++default_country("africa", "egypt", 1473947,   {"country": "EG", "language": "ar", "proj": 32635}, download_repo=OSMFR)
+$ ./get_polygon.py --region africa --country egypt
+africa/egypt
+   africa/egypt 1473947
+http://polygons.openstreetmap.fr/index.py?id=1473947
+http://polygons.openstreetmap.fr/get_poly.py?id=1473947¶ms=0.040000-0.010000-0.010000+
+$ echo review generated-polygons/africa/egypt.poly
+$ mv generated-polygons/africa/egypt.poly polygons/africa/egypt.poly
+$ wait 2 days or update parent pbf ./update_pbf.sh africa
+$ ./init_pbf.py --osmium --region africa --country egypt
+$ ./init_extracts_link.sh
