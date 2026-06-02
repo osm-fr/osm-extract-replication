@@ -8,6 +8,9 @@ cd polygons
 
 minute_dirs=$(find -name "*.poly" | sed "s%\.poly%/minute%")
 
+cd ..
+merge_dirs=$(find merge/ -type f | sed "s%\$%/minute%")
+
 cd $G_WORKDIR
 
 num=$(cat planet/minute/state.txt | grep sequenceNumber | cut -d= -f2)
@@ -26,6 +29,8 @@ for d in $(seq 1000 $oldest_dir); do
 #    done
 
     ls -d $minute_dirs | parallel -j 4 "[ -e '{}/$compl_dir' ] && rm -rf '{}/$compl_dir' || true"
+    ls -d $merge_dirs  | parallel -j 4 "[ -e '{}/$compl_dir' ] && rm -rf '{}/$compl_dir' || true"
+    rm -rf bbox/minute/$compl_dir
     rm -rf planet/minute/$compl_dir
   fi
 done
