@@ -16,8 +16,9 @@ cd $G_WORKDIR
 num=$(cat planet/minute/state.txt | grep sequenceNumber | cut -d= -f2)
 oldest=$(($num - 3/2*31*24*60))  # keep 1.5 months of diff
 oldest_dir=$(($oldest / 1000))
+start_check=$(($oldest_dir - 500))
 echo $oldest_dir
-for d in $(seq 1000 $oldest_dir); do
+for d in $(seq $start_check $oldest_dir); do
   compl_dir=$(printf "%03d/%03d" $(($d / 1000)) $(($d % 1000)))
   if [ -e planet/minute/$compl_dir ]; then
     echo $compl_dir
