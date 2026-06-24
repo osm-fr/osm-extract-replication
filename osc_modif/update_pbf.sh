@@ -11,12 +11,13 @@ ERRFILE="$WORKDIR/replication-${CURDATE}.err"
 SOURCE_OSM_FILE="$WORKDIR/$(basename $POLY).osm.pbf"
 TARGET_OSM_FILE="$WORKDIR/tmp/$(basename $POLY).osm.pbf"
 
-if [ -e "$LOCKFILE" ]; then
-  echo "Lock file $LOCKFILE still present - aborting update"
-  exit 1
-fi
+exec 8>$LOCKFILE;
 
-touch $LOCKFILE
+if flock -n -e 8; then :
+else
+  echo "Lock file $LOCKFILE still present - aborting update"
+  exit 1;
+fi
 
 exec 1>"$LOGFILE"
 exec 2>"$ERRFILE"
