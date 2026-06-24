@@ -164,6 +164,22 @@ def merge_pbf(filename, use_osmium):
 
   dest = filename
 
+  state_sequencenum = 0
+
+  for (n, d) in enumerate(pbf_list):
+    orig_state = os.path.join(work_pbfs_path, d, "state.txt")
+    with open(orig_state) as f:
+      for line in f:
+        (key, sep, value) = line.partition("=")
+        if key.strip() == "timestamp":
+          orig_state_timestamp = value.replace("\\:", ":").strip()
+        if key.strip() == "sequenceNumber":
+          orig_state_sequencenum = value.strip()
+    if state_sequencenum == 0 or orig_state_sequencenum < state_sequencenum:
+      state_sequencenum = orig_state_sequencenum
+      state_timestamp = orig_state_timestamp
+      oldest_orig_pbf = d
+
   if use_osmium:
     cmd = [osmium_bin, "merge", "--overwrite"]
     for (n, d) in enumerate(pbf_list):
@@ -171,15 +187,6 @@ def merge_pbf(filename, use_osmium):
 
     dest_pbf = os.path.join(merge_pbfs_path, dest, os.path.basename(dest) + ".osm.pbf")
     cmd += ["-o", dest_pbf]
-
-    orig_state = os.path.join(work_pbfs_path, d, "state.txt")
-    with open(orig_state) as f:
-      for line in f:
-        (key, sep, value) = line.partition("=")
-        if key.strip() == "timestamp":
-          state_timestamp = value.replace("\\:", ":").strip()
-        if key.strip() == "sequenceNumber":
-          state_sequencenum = value.strip()
 
     repl_base_url = "http://download.openstreetmap.fr/replication/%s/minute" % os.path.join("merge", dest)
 
@@ -203,7 +210,7 @@ def merge_pbf(filename, use_osmium):
 
   subprocess.check_call(cmd)
   new_state = os.path.join(merge_pbfs_path, dest, "state.txt")
-  shutil.copy2(os.path.join(work_pbfs_path, d, "state.txt"), new_state)
+  shutil.copy2(os.path.join(work_pbfs_path, oldest_orig_pbf, "state.txt"), new_state)
 
   # free lock
   sys.stdout.flush()
